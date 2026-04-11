@@ -15,7 +15,10 @@ public abstract class AbstractCombatant implements Combatant {
     private int bonusDefense;
 
     protected AbstractCombatant(String id, String name, CombatRole role, Stats baseStats) {
-        this.id = id;
+        if (baseStats == null) {
+        	throw new IllegalArgumentException("Base stats cannot be null for " + name);
+        }
+    	this.id = id;
         this.name = name;
         this.role = role;
         this.baseStats = baseStats;
@@ -85,6 +88,7 @@ public abstract class AbstractCombatant implements Combatant {
 
     @Override
     public void heal(int amount) {
+    	if (!isAlive()) return;
         int clamped = Math.max(0, amount);
         currentHp = Math.min(baseStats.maxHp(), currentHp + clamped);
     }
