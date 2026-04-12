@@ -106,5 +106,6 @@ public abstract class AbstractCombatant implements Combatant {
     @Override
     public void clearRoundBonuses() {
         bonusDefense = 0;
+        bonusAttack = 0;
     }
 }
