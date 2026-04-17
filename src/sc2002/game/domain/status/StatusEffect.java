@@ -17,6 +17,10 @@ public interface StatusEffect {
 
     void onTurnEnd(Combatant owner);
 
+    default void onRemove(Combatant owner) {
+        // no-op by default
+    }
+
     void tick();
 
     boolean isExpired();

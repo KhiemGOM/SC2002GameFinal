@@ -3,9 +3,9 @@ package sc2002.game.domain.actions;
 public interface CombatAction {
     ActionType type();
 
-    String label();
+    String label(ActionContext context);
 
     boolean canExecute(ActionContext context);
 
-    void execute(ActionContext context);
+    boolean execute(ActionContext context);
 }

@@ -14,7 +14,15 @@ public final class StatusTracker {
 
     public void add(StatusEffect effect, Combatant owner) {
         if (!effect.isStackable()) {
-            activeEffects.removeIf(existing -> existing.key().equals(effect.key()));
+            Iterator<StatusEffect> iterator = activeEffects.iterator();
+            while (iterator.hasNext()) {
+                StatusEffect existing = iterator.next();
+                if (!existing.key().equals(effect.key())) {
+                    continue;
+                }
+                existing.onRemove(owner);
+                iterator.remove();
+            }
         }
         activeEffects.add(effect);
         effect.onApply(owner);
@@ -49,16 +57,17 @@ public final class StatusTracker {
         }
     }
 
-    public void onRoundEnd() {
-        tickAndExpire();
+    public void onRoundEnd(Combatant owner) {
+        tickAndExpire(owner);
     }
 
-    private void tickAndExpire() {
+    private void tickAndExpire(Combatant owner) {
         Iterator<StatusEffect> iterator = activeEffects.iterator();
         while (iterator.hasNext()) {
             StatusEffect effect = iterator.next();
             effect.tick();
             if (effect.isExpired()) {
+                effect.onRemove(owner);
                 iterator.remove();
             }
         }

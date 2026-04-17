@@ -19,7 +19,7 @@ public interface BattleUI {
 
     Item promptItemChoice(List<Item> items);
 
-    void showBattleEnded(boolean playerWon, BattleState state);
+    PostBattleOption showBattleEnded(boolean playerWon, BattleState state);
 
     void showInfo(String message);
 }

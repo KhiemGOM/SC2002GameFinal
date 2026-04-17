@@ -18,7 +18,12 @@ public final class DefendBuffEffect extends TimedStatusEffect {
     }
 
     @Override
-    public int modifyIncomingDamage(Combatant owner, Combatant attacker, int currentDamage) {
-        return Math.max(0, currentDamage - 10);
+    public void onApply(Combatant owner) {
+        owner.addDefenseBonus(10);
+    }
+
+    @Override
+    public void onRemove(Combatant owner) {
+        owner.addDefenseBonus(-10);
     }
 }

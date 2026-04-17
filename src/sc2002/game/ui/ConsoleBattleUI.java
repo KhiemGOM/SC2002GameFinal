@@ -13,7 +13,7 @@ import sc2002.game.engine.BattleState;
 public final class ConsoleBattleUI implements BattleUI {
     private static final int WIDTH = 78;
     private static final String HLINE = "-".repeat(WIDTH);
-    private final Scanner scanner = new Scanner(System.in);
+    private final Scanner scanner;
     private final boolean useAnsiClear;
     private BattleState currentState;
     private int currentRound = 1;
@@ -21,10 +21,15 @@ public final class ConsoleBattleUI implements BattleUI {
     private final List<String> roundEvents = new ArrayList<>();
 
     public ConsoleBattleUI() {
-        this(true);
+        this(new Scanner(System.in), true);
     }
 
     public ConsoleBattleUI(boolean useAnsiClear) {
+        this(new Scanner(System.in), useAnsiClear);
+    }
+
+    public ConsoleBattleUI(Scanner scanner, boolean useAnsiClear) {
+        this.scanner = scanner;
         this.useAnsiClear = useAnsiClear;
     }
 
@@ -59,7 +64,7 @@ public final class ConsoleBattleUI implements BattleUI {
             if (cmd.equals("confirm")) {
                 return selected + 1;
             }
-            selected = moveInActionGrid(selected, cmd);
+            selected = moveInGrid(selected, options.size(), 2, cmd);
         }
     }
 
@@ -73,7 +78,7 @@ public final class ConsoleBattleUI implements BattleUI {
             List<String> enemyOptions = aliveEnemies.stream()
                     .map(e -> e.displayName() + " HP " + e.currentHp() + "/" + e.baseStats().maxHp())
                     .toList();
-            List<String> options = new java.util.ArrayList<>(enemyOptions);
+            List<String> options = new ArrayList<>(enemyOptions);
             options.add("[Back]");
             render(options, selected, 2, null, List.of("Select target. WASD to move, Enter to confirm, B to back."), false, true);
             String cmd = readNavCommand();
@@ -99,7 +104,7 @@ public final class ConsoleBattleUI implements BattleUI {
         int selected = 0;
         while (true) {
             List<String> itemOptions = items.stream().map(Item::name).toList();
-            List<String> options = new java.util.ArrayList<>(itemOptions);
+            List<String> options = new ArrayList<>(itemOptions);
             options.add("[Back]");
             String selectedDetail;
             if (selected < items.size()) {
@@ -123,10 +128,10 @@ public final class ConsoleBattleUI implements BattleUI {
     }
 
     @Override
-    public void showBattleEnded(boolean playerWon, BattleState state) {
+    public PostBattleOption showBattleEnded(boolean playerWon, BattleState state) {
         maybeShowRoundSummary();
         currentState = state;
-        showEndScreen(playerWon, state);
+        return showEndScreen(playerWon, state);
     }
 
     @Override
@@ -297,10 +302,6 @@ public final class ConsoleBattleUI implements BattleUI {
         return (selected == index ? "> " : "  ") + label;
     }
 
-    private int moveInActionGrid(int selected, String cmd) {
-        return moveInGrid(selected, 4, 2, cmd);
-    }
-
     private int moveInVerticalList(int selected, int size, String cmd) {
         return switch (cmd) {
             case "up", "left" -> (selected - 1 + size) % size;
@@ -348,6 +349,10 @@ public final class ConsoleBattleUI implements BattleUI {
     }
 
     private String readNavCommand() {
+        if (!scanner.hasNextLine()) {
+            System.out.println("\nConsole input closed. Exiting game.");
+            System.exit(0);
+        }
         String raw = scanner.nextLine();
         if (raw == null) {
             return "confirm";
@@ -461,7 +466,12 @@ public final class ConsoleBattleUI implements BattleUI {
         }
         summaryLines.add(padLeft("Press Enter to continue...", WIDTH - 4));
         render(null, -1, 0, null, summaryLines, false, false);
+
+        if (!scanner.hasNextLine()) {
+            System.exit(0);
+        }
         scanner.nextLine();
+
         roundEvents.clear();
     }
 
@@ -471,28 +481,54 @@ public final class ConsoleBattleUI implements BattleUI {
         }
     }
 
-    private void showEndScreen(boolean playerWon, BattleState state) {
-        clearScreen();
-        String top = "=".repeat(WIDTH);
-        System.out.println(top);
-        System.out.println(center("SC2002 BATTLE RESULT"));
-        System.out.println(top);
-        System.out.println();
+    private PostBattleOption showEndScreen(boolean playerWon, BattleState state) {
+        int selected = 0;
+        List<String> options = List.of("Replay Same Settings", "Start New Game", "Exit");
+        while (true) {
+            clearScreen();
+            String top = "=".repeat(WIDTH);
+            System.out.println(top);
+            System.out.println(center("SC2002 BATTLE RESULT"));
+            System.out.println(top);
+            System.out.println();
 
-        List<String> art = playerWon ? victoryAscii() : defeatAscii();
-        for (String line : art) {
-            System.out.println(center(line));
+            List<String> art = playerWon ? victoryAscii() : defeatAscii();
+            for (String line : art) {
+                System.out.println(center(line));
+            }
+            System.out.println();
+
+            String result = playerWon ? "YOU WIN" : "YOU LOSE";
+            System.out.println(center(result));
+            if (playerWon) {
+                System.out.println(center("Congratulations, you have defeated all your enemies."));
+                System.out.println(center("Remaining HP: " + state.player().currentHp() + "/" + state.player().baseStats().maxHp()));
+                System.out.println(center("Total Rounds: " + state.roundNumber()));
+            } else {
+                System.out.println(center("Defeated. Don't give up, try again!"));
+                System.out.println(center("Enemies Remaining: " + state.aliveEnemies().size()));
+                System.out.println(center("Total Rounds Survived: " + state.roundNumber()));
+            }
+            System.out.println(center("Level: " + state.levelConfig().difficulty()));
+            System.out.println();
+            System.out.println(center("Choose what to do next:"));
+            for (int i = 0; i < options.size(); i++) {
+                String prefix = (i == selected) ? "> " : "  ";
+                System.out.println(center(prefix + options.get(i)));
+            }
+            System.out.println();
+            System.out.println(center("W/S to move, Enter to confirm"));
+
+            String cmd = readNavCommand();
+            if ("confirm".equals(cmd)) {
+                return switch (selected) {
+                    case 0 -> PostBattleOption.REPLAY_SAME_SETTINGS;
+                    case 1 -> PostBattleOption.START_NEW_GAME;
+                    default -> PostBattleOption.EXIT;
+                };
+            }
+            selected = moveInVerticalList(selected, options.size(), cmd);
         }
-        System.out.println();
-
-        String result = playerWon ? "YOU WIN" : "YOU LOSE";
-        System.out.println(center(result));
-        System.out.println(center("Rounds: " + state.roundNumber()));
-        System.out.println(center("Player HP: " + state.player().currentHp() + "/" + state.player().baseStats().maxHp()));
-        System.out.println(center("Level: " + state.levelConfig().difficulty()));
-        System.out.println();
-        System.out.println(center("Press Enter to exit..."));
-        scanner.nextLine();
     }
 
     private List<String> victoryAscii() {

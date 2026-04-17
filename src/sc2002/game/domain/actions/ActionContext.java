@@ -1,40 +1,35 @@
 package sc2002.game.domain.actions;
 
-import java.util.List;
 import sc2002.game.domain.combat.Combatant;
 import sc2002.game.engine.BattleState;
+import sc2002.game.ui.BattleUI;
 
 public final class ActionContext {
     private final Combatant actor;
-    private final Combatant primaryTarget;
-    private final List<Combatant> allTargets;
     private final BattleState state;
+    private final BattleUI ui;
+    private final ActionSupport support;
 
-    public ActionContext(
-            Combatant actor,
-            Combatant primaryTarget,
-            List<Combatant> allTargets,
-            BattleState state
-    ) {
+    public ActionContext(Combatant actor, BattleState state, BattleUI ui, ActionSupport support) {
         this.actor = actor;
-        this.primaryTarget = primaryTarget;
-        this.allTargets = allTargets;
         this.state = state;
+        this.ui = ui;
+        this.support = support;
     }
 
     public Combatant actor() {
         return actor;
     }
 
-    public Combatant primaryTarget() {
-        return primaryTarget;
-    }
-
-    public List<Combatant> allTargets() {
-        return allTargets;
-    }
-
     public BattleState state() {
         return state;
+    }
+
+    public BattleUI ui() {
+        return ui;
+    }
+
+    public ActionSupport support() {
+        return support;
     }
 }

@@ -6,6 +6,7 @@ import sc2002.game.engine.BattleEngine;
 import sc2002.game.engine.DamageCalculator;
 import sc2002.game.engine.SpeedTurnOrderStrategy;
 import sc2002.game.ui.ConsoleBattleUI;
+import sc2002.game.ui.PostBattleOption;
 
 public class Main {
     public static void main(String[] args) {
@@ -36,16 +37,29 @@ public class Main {
 
         Scanner scanner = new Scanner(System.in);
         ConsoleSetupFlow setupFlow = new ConsoleSetupFlow(scanner, useAnsiClear);
-        GameSetup setup = setupFlow.promptStartAndSetup();
-        if (setup == null) {
-            return;
-        }
-
         BattleEngine engine = new BattleEngine(
                 new SpeedTurnOrderStrategy(),
                 new DamageCalculator(),
-                new ConsoleBattleUI(useAnsiClear)
+                new ConsoleBattleUI(scanner, useAnsiClear)
         );
-        engine.runInteractiveLevel(setup.level(), setup.player(), setup.items());
+
+        GameSetup selectedSetup = setupFlow.promptStartAndSetup();
+        while (selectedSetup != null) {
+            GameSetup playableSetup = selectedSetup.freshCopy();
+            PostBattleOption option = engine.runInteractiveLevel(
+                    playableSetup.level(),
+                    playableSetup.player(),
+                    playableSetup.items()
+            );
+
+            if (option == PostBattleOption.REPLAY_SAME_SETTINGS) {
+                continue;
+            }
+            if (option == PostBattleOption.START_NEW_GAME) {
+                selectedSetup = setupFlow.promptStartAndSetup();
+                continue;
+            }
+            break;
+        }
     }
 }

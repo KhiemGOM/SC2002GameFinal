@@ -1,5 +1,7 @@
 package sc2002.game.domain.actions;
 
+import sc2002.game.domain.combat.player.PlayerCharacter;
+
 public final class SpecialSkillAction implements CombatAction {
     @Override
     public ActionType type() {
@@ -7,19 +9,31 @@ public final class SpecialSkillAction implements CombatAction {
     }
 
     @Override
-    public String label() {
-        return "Special Skill";
+    public String label(ActionContext context) {
+        if (!(context.actor() instanceof PlayerCharacter player)) {
+            return "Special Skill";
+        }
+        if (player.specialSkillCooldown().isReady()) {
+            return "Special: " + player.specialSkillName();
+        }
+        int cooldown = player.specialSkillCooldown().remainingTurns();
+        return "Special: [EXHAUSTED | CD " + cooldown + "]";
     }
 
     @Override
     public boolean canExecute(ActionContext context) {
-        return context.actor().specialSkillCooldown().isReady();
+        return context.actor() instanceof PlayerCharacter;
     }
 
     @Override
-    public void execute(ActionContext context) {
-        // Level-1 abstraction placeholder:
-        // concrete Warrior/Wizard skill execution flow should be plugged here.
-        context.actor().specialSkillCooldown().startThreeTurnCooldown();
+    public boolean execute(ActionContext context) {
+        if (!(context.actor() instanceof PlayerCharacter player)) {
+            return false;
+        }
+        if (!player.specialSkillCooldown().isReady()) {
+            context.ui().showInfo("Special skill cooldown: " + player.specialSkillCooldown().remainingTurns());
+            return false;
+        }
+        return context.support().executeSpecialSkill(player, false);
     }
 }

@@ -9,7 +9,7 @@ public final class DefendAction implements CombatAction {
     }
 
     @Override
-    public String label() {
+    public String label(ActionContext context) {
         return "Defend";
     }
 
@@ -19,7 +19,9 @@ public final class DefendAction implements CombatAction {
     }
 
     @Override
-    public void execute(ActionContext context) {
+    public boolean execute(ActionContext context) {
         context.actor().statuses().add(new DefendBuffEffect(), context.actor());
+        context.ui().showInfo(context.actor().name() + " uses Defend (+10 DEF for current and next round).");
+        return true;
     }
 }

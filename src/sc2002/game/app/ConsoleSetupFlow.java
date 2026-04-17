@@ -43,6 +43,8 @@ public final class ConsoleSetupFlow {
     }
 
     private GameSetup promptSetup() {
+        showOverviewScreen();
+
         int playerChoice = promptMenu(
                 "CHOOSE PLAYER",
                 "W/S move, Enter confirm",
@@ -78,6 +80,36 @@ public final class ConsoleSetupFlow {
 
         clearScreen();
         return new GameSetup(level, player, List.copyOf(items));
+    }
+
+    private void showOverviewScreen() {
+        clearScreen();
+        String top = "+" + "-".repeat(WIDTH - 2) + "+";
+        List<String> lines = List.of(
+                "PLAYER CLASSES",
+                "Warrior: HP 260 | ATK 40 | DEF 20 | SPD 30 | Skill: Shield Bash",
+                "Wizard : HP 200 | ATK 50 | DEF 10 | SPD 20 | Skill: Arcane Blast",
+                "",
+                "ENEMY TYPES",
+                "Goblin: HP 55 | ATK 35 | DEF 15 | SPD 25",
+                "Wolf  : HP 40 | ATK 45 | DEF  5 | SPD 35",
+                "",
+                "DIFFICULTY ENEMY POOLS",
+                "Easy   - Initial: 3 Goblins",
+                "Medium - Initial: 1 Goblin + 1 Wolf | Backup: 2 Wolves",
+                "Hard   - Initial: 2 Goblins | Backup: 1 Goblin + 2 Wolves",
+                "",
+                "Press Enter to continue..."
+        );
+
+        System.out.println(top);
+        System.out.println("| " + padRight(centerWithin("BATTLE OVERVIEW", WIDTH - 4), WIDTH - 4) + " |");
+        System.out.println("|" + "-".repeat(WIDTH - 2) + "|");
+        for (String line : lines) {
+            System.out.println("| " + padRight(line, WIDTH - 4) + " |");
+        }
+        System.out.println(top);
+        scanner.nextLine();
     }
 
     private int promptMenu(String title, String subtitle, List<String> options) {
