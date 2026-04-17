@@ -136,6 +136,8 @@ public final class BattleEngine {
             }
             if (action.execute(context)) {
                 return;
+
+
             }
         }
     }
@@ -164,6 +166,8 @@ public final class BattleEngine {
         state.player().statuses().onRoundEnd(state.player());
         for (Enemy enemy : state.aliveEnemies()) {
             enemy.statuses().onRoundEnd(enemy);
+
+
         }
     }
 
@@ -184,6 +188,8 @@ public final class BattleEngine {
             for (int i = 1; i <= count; i++) {
                 String id = prefix + "-" + type.name().toLowerCase() + "-" + i;
                 enemies.add(enemyFactory.create(type, id));
+
+
             }
         }
         return enemies;
@@ -195,6 +201,7 @@ public final class BattleEngine {
                 new DefendAction(),
                 new UseItemAction(),
                 new SpecialSkillAction()
+
         );
     }
 
@@ -231,6 +238,7 @@ public final class BattleEngine {
         @Override
         public int applyBasicAttack(Combatant attacker, Combatant defender) {
             return BattleEngine.this.applyBasicAttack(attacker, defender);
+
         }
 
         @Override
@@ -248,6 +256,7 @@ public final class BattleEngine {
         @Override
         public int applyBasicAttack(Combatant attacker, Combatant defender) {
             return BattleEngine.this.applyBasicAttack(attacker, defender);
+
         }
 
         @Override

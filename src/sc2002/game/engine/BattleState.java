@@ -15,6 +15,7 @@ public final class BattleState {
     private final PlayerCharacter player;
     private final List<Enemy> enemies;
     private final List<Item> playerItems;
+
     private int roundNumber;
     private boolean backupSpawned;
 
@@ -23,6 +24,7 @@ public final class BattleState {
         this.player = player;
         this.enemies = new ArrayList<>(enemies);
         this.playerItems = new ArrayList<>(playerItems);
+
         this.roundNumber = 1;
     }
 
@@ -77,6 +79,7 @@ public final class BattleState {
                 String id = "backup-" + type.name().toLowerCase() + "-" + i;
                 enemies.add(factory.create(type, id));
             }
+
         }
         backupSpawned = true;
         return true;

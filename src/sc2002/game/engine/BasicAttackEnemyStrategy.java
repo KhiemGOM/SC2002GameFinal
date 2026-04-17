@@ -12,4 +12,6 @@ public final class BasicAttackEnemyStrategy implements EnemyActionStrategy {
         String deathNote = support.player().isAlive() ? "" : " " + support.player().name() + " dies.";
         support.showInfo(enemy.displayName() + " attacks " + support.player().name() + " for " + damage + " damage." + deathNote);
     }
+
+
 }
