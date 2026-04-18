@@ -14,8 +14,4 @@ public final class PotionItem implements Item {
         player.heal(100);
     }
         
-    @Override
-    public boolean use(PlayerCharacter player, BattleState state, ItemUseSupport support) {
-    	return player.heal(100);
-    }
 }

@@ -37,6 +37,23 @@ public final class ConsoleBattleUI implements BattleUI {
     public void showBattleInitialized(BattleState state) {
         currentState = state;
         currentRound = state.roundNumber();
+        showBattleIntro(state);
+    }
+
+    private void showBattleIntro(BattleState state) {
+        clearScreen();
+        System.out.println(HLINE);
+        System.out.println(center("SC2002 BATTLE ARENA  |  " + state.levelConfig().difficulty()));
+        System.out.println(HLINE);
+        System.out.println();
+        System.out.println(center("Press Enter to start battle..."));
+        System.out.println();
+        System.out.println(HLINE);
+
+        if (!scanner.hasNextLine()) {
+            System.exit(0);
+        }
+        scanner.nextLine();
     }
 
     @Override

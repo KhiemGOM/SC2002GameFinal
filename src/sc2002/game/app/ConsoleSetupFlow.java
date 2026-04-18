@@ -2,6 +2,7 @@ package sc2002.game.app;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Supplier;
 import sc2002.game.domain.combat.player.PlayerCharacter;
@@ -11,8 +12,10 @@ import sc2002.game.domain.items.Item;
 import sc2002.game.domain.items.PotionItem;
 import sc2002.game.domain.items.PowerStoneItem;
 import sc2002.game.domain.items.SmokeBombItem;
+import sc2002.game.level.EnemyType;
 import sc2002.game.level.LevelConfig;
 import sc2002.game.level.LevelFactory;
+import sc2002.game.level.SpawnWave;
 
 public final class ConsoleSetupFlow {
     private static final int WIDTH = 78;
@@ -32,7 +35,8 @@ public final class ConsoleSetupFlow {
         int startChoice = promptMenu(
                 "SC2002 TURN-BASED ARENA",
                 "Use W/S (or A/D) then Enter",
-                List.of("START", "QUIT")
+                List.of("START", "QUIT"),
+                null
         );
         if (startChoice == 1) {
             clearScreen();
@@ -43,36 +47,31 @@ public final class ConsoleSetupFlow {
     }
 
     private GameSetup promptSetup() {
-        showOverviewScreen();
-
-        int playerChoice = promptMenu(
-                "CHOOSE PLAYER",
-                "W/S move, Enter confirm",
-                List.of(
-                        "Warrior (HP 260, ATK 40, DEF 20, SPD 30)",
-                        "Wizard  (HP 200, ATK 50, DEF 10, SPD 20)"
-                )
+        List<String> playerOptions = List.of("Warrior", "Wizard");
+        List<String> playerDetails = List.of(
+                "HP 260 | ATK 40 | DEF 20 | SPD 30\nSkill: Shield Bash - Strike an enemy for normal damage + apply Stun (2 turns).",
+                "HP 200 | ATK 50 | DEF 10 | SPD 20\nSkill: Arcane Blast - Strike all enemies for normal damage. Gain ATK +10 permanently for each enemy killed."
         );
+        int playerChoice = promptMenu("CHOOSE PLAYER", "W/S move, Enter confirm", playerOptions, playerDetails);
 
-        int levelChoice = promptMenu(
-                "CHOOSE LEVEL",
-                "W/S move, Enter confirm",
-                List.of(
-                        "Easy   - 3 Goblins",
-                        "Medium - 1 Goblin + 1 Wolf, backup: 2 Wolves",
-                        "Hard   - 2 Goblins, backup: 1 Goblin + 2 Wolves"
-                )
-        );
+        List<LevelConfig> levelConfigs = List.of(LevelFactory.easy(), LevelFactory.medium(), LevelFactory.hard());
+        List<String> levelOptions = List.of("Easy", "Medium", "Hard");
+        List<String> levelDetails = levelConfigs.stream().map(this::levelDetail).toList();
+        int levelChoice = promptMenu("CHOOSE LEVEL", "W/S move, Enter confirm", levelOptions, levelDetails);
 
         List<String> itemOptions = List.of("Potion", "Power Stone", "Smoke Bomb");
+        List<String> itemDetails = List.of(
+                "Heals 100 HP, up to your max HP.",
+                "Triggers your Special Skill once without changing cooldown.",
+                "Enemy attacks deal 0 damage for current and next turn."
+        );
         List<Supplier<Item>> itemFactories = List.of(PotionItem::new, PowerStoneItem::new, SmokeBombItem::new);
-        List<LevelConfig> levelConfigs = List.of(LevelFactory.easy(), LevelFactory.medium(), LevelFactory.hard());
 
         List<Item> items = new ArrayList<>();
-        int firstItem = promptMenu("CHOOSE ITEM 1/2", "Duplicates allowed", itemOptions);
+        int firstItem = promptMenu("CHOOSE ITEM 1/2", "Duplicates allowed", itemOptions, itemDetails);
         items.add(itemFactories.get(firstItem).get());
 
-        int secondItem = promptMenu("CHOOSE ITEM 2/2", "Duplicates allowed", itemOptions);
+        int secondItem = promptMenu("CHOOSE ITEM 2/2", "Duplicates allowed", itemOptions, itemDetails);
         items.add(itemFactories.get(secondItem).get());
 
         PlayerCharacter player = playerChoice == 0 ? new Warrior("player-1") : new Wizard("player-1");
@@ -82,40 +81,33 @@ public final class ConsoleSetupFlow {
         return new GameSetup(level, player, List.copyOf(items));
     }
 
-    private void showOverviewScreen() {
-        clearScreen();
-        String top = "+" + "-".repeat(WIDTH - 2) + "+";
-        List<String> lines = List.of(
-                "PLAYER CLASSES",
-                "Warrior: HP 260 | ATK 40 | DEF 20 | SPD 30 | Skill: Shield Bash",
-                "Wizard : HP 200 | ATK 50 | DEF 10 | SPD 20 | Skill: Arcane Blast",
-                "",
-                "ENEMY TYPES",
-                "Goblin: HP 55 | ATK 35 | DEF 15 | SPD 25",
-                "Wolf  : HP 40 | ATK 45 | DEF  5 | SPD 35",
-                "",
-                "DIFFICULTY ENEMY POOLS",
-                "Easy   - Initial: 3 Goblins",
-                "Medium - Initial: 1 Goblin + 1 Wolf | Backup: 2 Wolves",
-                "Hard   - Initial: 2 Goblins | Backup: 1 Goblin + 2 Wolves",
-                "",
-                "Press Enter to continue..."
-        );
-
-        System.out.println(top);
-        System.out.println("| " + padRight(centerWithin("BATTLE OVERVIEW", WIDTH - 4), WIDTH - 4) + " |");
-        System.out.println("|" + "-".repeat(WIDTH - 2) + "|");
-        for (String line : lines) {
-            System.out.println("| " + padRight(line, WIDTH - 4) + " |");
+    private String levelDetail(LevelConfig level) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Wave 1:  ").append(waveToString(level.initialWave()));
+        if (level.backupWave() != null) {
+            sb.append("\nWave 2:  ").append(waveToString(level.backupWave()));
         }
-        System.out.println(top);
-        scanner.nextLine();
+        return sb.toString();
     }
 
-    private int promptMenu(String title, String subtitle, List<String> options) {
+    private String waveToString(SpawnWave wave) {
+        List<String> parts = new ArrayList<>();
+        Map<EnemyType, Integer> entries = wave.entries();
+        for (EnemyType type : EnemyType.values()) {
+            Integer count = entries.get(type);
+            if (count != null) {
+                String name = type.name().charAt(0) + type.name().substring(1).toLowerCase();
+                parts.add(name + " x" + count);
+            }
+        }
+        return String.join("  ", parts);
+    }
+
+    private int promptMenu(String title, String subtitle, List<String> options, List<String> details) {
         int selected = 0;
         while (true) {
-            drawMenu(title, subtitle, options, selected);
+            String detail = (details != null) ? details.get(selected) : null;
+            drawMenu(title, subtitle, options, selected, detail);
             String cmd = readNavCommand();
             if (cmd.equals("confirm")) {
                 return selected;
@@ -129,7 +121,7 @@ public final class ConsoleSetupFlow {
         }
     }
 
-    private void drawMenu(String title, String subtitle, List<String> options, int selected) {
+    private void drawMenu(String title, String subtitle, List<String> options, int selected, String detail) {
         clearScreen();
         String top = "+" + "-".repeat(WIDTH - 2) + "+";
         System.out.println(top);
@@ -141,6 +133,16 @@ public final class ConsoleSetupFlow {
             String line = (i == selected ? "> " : "  ") + options.get(i);
             System.out.println("| " + padRight(line, WIDTH - 4) + " |");
         }
+
+        if (detail != null) {
+            System.out.println("|" + "-".repeat(WIDTH - 2) + "|");
+            for (String dline : detail.split("\n")) {
+                for (String wrapped : wrapLine("  " + dline, WIDTH - 4)) {
+                    System.out.println("| " + padRight(wrapped, WIDTH - 4) + " |");
+                }
+            }
+        }
+
         System.out.println(top);
     }
 
@@ -176,6 +178,26 @@ public final class ConsoleSetupFlow {
         int leftPad = (width - text.length()) / 2;
         int rightPad = width - text.length() - leftPad;
         return " ".repeat(leftPad) + text + " ".repeat(rightPad);
+    }
+
+    private List<String> wrapLine(String text, int width) {
+        if (text.length() <= width) {
+            return List.of(text);
+        }
+        List<String> lines = new ArrayList<>();
+        String remaining = text;
+        while (remaining.length() > width) {
+            int cut = remaining.lastIndexOf(' ', width);
+            if (cut <= 0) {
+                cut = width;
+            }
+            lines.add(remaining.substring(0, cut));
+            remaining = "  " + remaining.substring(cut).trim();
+        }
+        if (!remaining.isEmpty()) {
+            lines.add(remaining);
+        }
+        return lines;
     }
 
     private String padRight(String text, int width) {
