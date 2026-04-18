@@ -21,7 +21,8 @@ public final class Wizard extends PlayerCharacter {
     @Override
     public boolean performSpecialSkill(BattleState state, PlayerSkillBridge bridge) {
         int kills = 0;
-        for (Enemy enemy : state.aliveEnemies()) {
+        List<Enemy> targets = List.copyOf(state.aliveEnemies());
+        for (Enemy enemy : targets) {
             if (!enemy.isAlive()) {
                 continue;
             }
