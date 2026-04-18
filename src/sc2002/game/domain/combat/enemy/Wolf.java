@@ -14,7 +14,7 @@ public final class Wolf extends Enemy {
     public List<String> asciiArt() {
         return List.of(
                 " /\\_/\\",
-                "( o.o )"
+                "( `Д´ )"
         );
     }
 }
